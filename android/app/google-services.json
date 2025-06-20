@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "96539269952",
+    "project_id": "pfirebase-ea8fb",
+    "storage_bucket": "pfirebase-ea8fb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:96539269952:android:84b7b3aa7faba8e443b8a5",
+        "android_client_info": {
+          "package_name": "com.example.admin_panel_drive_smart"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "96539269952-030thmr8k2gfnq293rfqb8lnv37crvhf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDPXUNcU6gfdXXTVv4aUkvLYyVqFeB6tc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "96539269952-030thmr8k2gfnq293rfqb8lnv37crvhf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "96539269952-d04la1tl7ndvumidu10vv8pc7u5g6dd0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.adminPanelDriveSmart"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:96539269952:android:ee49f1ec2378036743b8a5",
+        "android_client_info": {
+          "package_name": "com.example.p"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "96539269952-rs07d6qocdvv44626784kac2fh36b2e7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.p",
+            "certificate_hash": "77276fffd34ba60b6cccc6ce83c543880c0dba2a"
+          }
+        },
+        {
+          "client_id": "96539269952-030thmr8k2gfnq293rfqb8lnv37crvhf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDPXUNcU6gfdXXTVv4aUkvLYyVqFeB6tc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "96539269952-030thmr8k2gfnq293rfqb8lnv37crvhf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "96539269952-d04la1tl7ndvumidu10vv8pc7u5g6dd0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.adminPanelDriveSmart"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
