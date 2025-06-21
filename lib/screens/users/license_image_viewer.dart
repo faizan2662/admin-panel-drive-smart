@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class LicenseImageViewer extends StatefulWidget {
   final String imageUrl;
@@ -39,31 +40,27 @@ class _LicenseImageViewerState extends State<LicenseImageViewer> {
               minScale: 0.5,
               maxScale: 4.0,
               child: Center(
-                child: Image.network(
-                  widget.imageUrl,
+                child: CachedNetworkImage(
+                  imageUrl: widget.imageUrl,
                   fit: BoxFit.contain,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                : null,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Loading license image...',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
+                  placeholder: (context, url) => Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Loading license image...',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                  errorWidget: (context, url, error) {
+                    print('Error in image viewer: $url, Error: $error');
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -89,9 +86,25 @@ class _LicenseImageViewerState extends State<LicenseImageViewer> {
                               fontSize: 14,
                             ),
                           ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              // Force refresh by clearing cache and rebuilding
+                              CachedNetworkImage.evictFromCache(widget.imageUrl);
+                              setState(() {});
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.black,
+                            ),
+                            child: const Text('Retry'),
+                          ),
                         ],
                       ),
                     );
+                  },
+                  httpHeaders: const {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                   },
                 ),
               ),

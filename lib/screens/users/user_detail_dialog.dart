@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:typed_data';
 import '../../models/user_model.dart';
 import '../../providers/users_provider.dart';
 import '../../utils/theme.dart';
 import 'license_image_viewer.dart';
+import 'package:flutter/foundation.dart'; // for kIsWeb
+import 'dart:html' as html; // for web URL opening
 
 class UserDetailDialog extends StatelessWidget {
   final UserModel user;
@@ -259,6 +263,391 @@ class UserDetailDialog extends StatelessWidget {
     );
   }
 
+  Widget _buildLicenseDocumentsTab(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Driving License Documents',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryBlue,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Get license URLs directly from metadata
+          FutureBuilder<Map<String, String?>>(
+            future: _getLicenseImageUrls(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+
+              final frontUrl = snapshot.data?['front'];
+              final backUrl = snapshot.data?['back'];
+
+              if (frontUrl != null || backUrl != null) {
+                return Row(
+                  children: [
+                    // Front License
+                    if (frontUrl != null)
+                      Expanded(
+                        child: _buildDirectViewCard(
+                          'Front License',
+                          frontUrl,
+                          Icons.credit_card,
+                          Colors.blue,
+                        ),
+                      ),
+
+                    if (frontUrl != null && backUrl != null)
+                      const SizedBox(width: 16),
+
+                    // Back License
+                    if (backUrl != null)
+                      Expanded(
+                        child: _buildDirectViewCard(
+                          'Back License',
+                          backUrl,
+                          Icons.credit_card_off,
+                          Colors.green,
+                        ),
+                      ),
+                  ],
+                );
+              } else {
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.credit_card_off,
+                        size: 48,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No License Documents Available',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'This trainer has not uploaded license documents yet.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[500],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Get license URLs directly from metadata
+  Future<Map<String, String?>> _getLicenseImageUrls() async {
+    final Map<String, String?> urls = {'front': null, 'back': null};
+
+    if (user.metadata == null) return urls;
+
+    final frontUrl = user.metadata!['frontLicenseUrl']?.toString();
+    final backUrl = user.metadata!['backLicenseUrl']?.toString();
+
+    print('=== USING DIRECT URLS ===');
+    print('Front URL: $frontUrl');
+    print('Back URL: $backUrl');
+
+    urls['front'] = frontUrl;
+    urls['back'] = backUrl;
+
+    print('=========================');
+    return urls;
+  }
+
+  // Build direct view card with buttons to open images in browser
+  Widget _buildDirectViewCard(
+      String title,
+      String imageUrl,
+      IconData icon,
+      Color color,
+      ) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Content area with buttons instead of image
+          Container(
+            width: double.infinity,
+            height: 200,
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+            ),
+            child: Container(
+              color: Colors.grey[50],
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // License icon
+                  Icon(
+                    Icons.description,
+                    size: 48,
+                    color: color.withOpacity(0.7),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Title
+                  Text(
+                    'License Document Available',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Description
+                  Text(
+                    'Click below to view the document',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // View buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // View in New Tab button
+                      ElevatedButton.icon(
+                        onPressed: () => _openUrlInNewTab(imageUrl),
+                        icon: const Icon(Icons.open_in_new, size: 16),
+                        label: const Text('View Image'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: color,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          textStyle: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Copy URL button
+                      OutlinedButton.icon(
+                        onPressed: () => _copyUrlToClipboard(imageUrl),
+                        icon: const Icon(Icons.copy, size: 16),
+                        label: const Text('Copy URL'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: color,
+                          side: BorderSide(color: color),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          textStyle: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Open URL in new browser tab
+  void _openUrlInNewTab(String url) {
+    if (kIsWeb) {
+      html.window.open(url, '_blank');
+    }
+  }
+
+  // Copy URL to clipboard
+  void _copyUrlToClipboard(String url) {
+    if (kIsWeb) {
+      html.window.navigator.clipboard?.writeText(url);
+      // Show a brief success message
+      print('URL copied to clipboard: $url');
+    }
+  }
+
+  // Helper methods for quiz data
+  bool _hasQuizData() {
+    return user.metadata?['quizPercentage'] != null ||
+        user.metadata?['totalQuestions'] != null ||
+        user.metadata?['quizScore'] != null;
+  }
+
+  int _getQuizPercentage() {
+    final percentage = user.metadata?['quizPercentage'];
+    if (percentage is int) return percentage;
+    if (percentage is String) return int.tryParse(percentage) ?? 0;
+    return 0;
+  }
+
+  int? _getTotalQuestions() {
+    final total = user.metadata?['totalQuestions'];
+    if (total is int) return total;
+    if (total is String) return int.tryParse(total);
+    return null;
+  }
+
+  int? _getQuizScore() {
+    final score = user.metadata?['quizScore'];
+    if (score is int) return score;
+    if (score is String) return int.tryParse(score);
+    return null;
+  }
+
+  double _calculateRating(int percentage) {
+    // Convert percentage to 5-star rating
+    if (percentage >= 90) {
+      return 4.5 + (percentage - 90) * 0.05; // 4.5 to 5.0
+    } else if (percentage >= 80) {
+      return 3.5 + (percentage - 80) * 0.1; // 3.5 to 4.4
+    } else if (percentage >= 70) {
+      return 2.5 + (percentage - 70) * 0.1; // 2.5 to 3.4
+    } else if (percentage >= 60) {
+      return 1.5 + (percentage - 60) * 0.1; // 1.5 to 2.4
+    } else if (percentage >= 50) {
+      return 0.5 + (percentage - 50) * 0.1; // 0.5 to 1.4
+    } else {
+      return 0.5; // Minimum rating
+    }
+  }
+
+  Color _getRatingColor(double rating) {
+    if (rating >= 4.0) return Colors.green;
+    if (rating >= 3.0) return Colors.orange;
+    if (rating >= 2.0) return Colors.deepOrange;
+    return Colors.red;
+  }
+
+  Color _getPerformanceColor(int percentage) {
+    if (percentage >= 80) return Colors.green;
+    if (percentage >= 60) return Colors.orange;
+    return Colors.red;
+  }
+
+  String _getRatingDescription(double rating) {
+    if (rating >= 4.5) return 'Excellent Performance';
+    if (rating >= 4.0) return 'Very Good Performance';
+    if (rating >= 3.0) return 'Good Performance';
+    if (rating >= 2.0) return 'Fair Performance';
+    return 'Needs Improvement';
+  }
+
+  bool _isHiddenField(String key) {
+    // Hide license URLs and quiz data from additional info
+    const hiddenKeys = {
+      'name', 'email', 'userType', 'timestamp', 'city', 'cnic',
+      'currentLocation', 'fatherName', 'gender', 'verificationStatus',
+      'verifiedAt', 'verifiedBy', 'frontLicenseUrl', 'backLicenseUrl',
+      'quizPercentage', 'totalQuestions', 'quizScore', 'quizCompletedAt',
+      'applicationStatus', 'lat', 'lng'
+    };
+    return hiddenKeys.contains(key);
+  }
+
+  void _showImageViewer(BuildContext context, String imageUrl, String title) {
+    showDialog(
+      context: context,
+      builder: (context) => LicenseImageViewer(
+        imageUrl: imageUrl,
+        title: title,
+      ),
+    );
+  }
+
+  Widget _buildDetailSection(String title, List<Widget> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.primaryBlue,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Divider(),
+          const SizedBox(height: 8),
+          ...items,
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuizPerformanceSection() {
     final quizPercentage = _getQuizPercentage();
     final totalQuestions = _getTotalQuestions();
@@ -389,337 +778,6 @@ class UserDetailDialog extends StatelessWidget {
         ),
       ),
     ]);
-  }
-
-  Widget _buildLicenseDocumentsTab(BuildContext context) {
-    // Use correct lowercase field names from Firebase
-    final frontLicenseUrl = user.metadata?['frontLicenseUrl'] as String?;
-    final backLicenseUrl = user.metadata?['backLicenseUrl'] as String?;
-
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Driving License Documents',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.primaryBlue,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          if (frontLicenseUrl != null || backLicenseUrl != null)
-            Row(
-              children: [
-                // Front License
-                if (frontLicenseUrl != null)
-                  Expanded(
-                    child: _buildLicenseCard(
-                      context,
-                      'Front License',
-                      frontLicenseUrl,
-                      Icons.credit_card,
-                      Colors.blue,
-                    ),
-                  ),
-
-                if (frontLicenseUrl != null && backLicenseUrl != null)
-                  const SizedBox(width: 16),
-
-                // Back License
-                if (backLicenseUrl != null)
-                  Expanded(
-                    child: _buildLicenseCard(
-                      context,
-                      'Back License',
-                      backLicenseUrl,
-                      Icons.credit_card_off,
-                      Colors.green,
-                    ),
-                  ),
-              ],
-            )
-          else
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.credit_card_off,
-                    size: 48,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No License Documents Available',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'This trainer has not uploaded license documents yet.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLicenseCard(BuildContext context, String title, String imageUrl, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: color, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Image
-          GestureDetector(
-            onTap: () => _showImageViewer(context, imageUrl, title),
-            child: Container(
-              width: double.infinity,
-              height: 200,
-              decoration: const BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
-                ),
-                child: Stack(
-                  children: [
-                    Image.network(
-                      imageUrl,
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          color: Colors.grey[100],
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                  : null,
-                              color: color,
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[100],
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.error_outline, color: Colors.grey[400], size: 32),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Failed to load image',
-                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-
-                    // Overlay with expand icon
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Icon(
-                          Icons.zoom_in,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Helper methods for quiz data
-  bool _hasQuizData() {
-    return user.metadata?['quizPercentage'] != null ||
-        user.metadata?['totalQuestions'] != null ||
-        user.metadata?['quizScore'] != null;
-  }
-
-  int _getQuizPercentage() {
-    final percentage = user.metadata?['quizPercentage'];
-    if (percentage is int) return percentage;
-    if (percentage is String) return int.tryParse(percentage) ?? 0;
-    return 0;
-  }
-
-  int? _getTotalQuestions() {
-    final total = user.metadata?['totalQuestions'];
-    if (total is int) return total;
-    if (total is String) return int.tryParse(total);
-    return null;
-  }
-
-  int? _getQuizScore() {
-    final score = user.metadata?['quizScore'];
-    if (score is int) return score;
-    if (score is String) return int.tryParse(score);
-    return null;
-  }
-
-  double _calculateRating(int percentage) {
-    // Convert percentage to 5-star rating
-    if (percentage >= 90) {
-      return 4.5 + (percentage - 90) * 0.05; // 4.5 to 5.0
-    } else if (percentage >= 80) {
-      return 3.5 + (percentage - 80) * 0.1; // 3.5 to 4.4
-    } else if (percentage >= 70) {
-      return 2.5 + (percentage - 70) * 0.1; // 2.5 to 3.4
-    } else if (percentage >= 60) {
-      return 1.5 + (percentage - 60) * 0.1; // 1.5 to 2.4
-    } else if (percentage >= 50) {
-      return 0.5 + (percentage - 50) * 0.1; // 0.5 to 1.4
-    } else {
-      return 0.5; // Minimum rating
-    }
-  }
-
-  Color _getRatingColor(double rating) {
-    if (rating >= 4.0) return Colors.green;
-    if (rating >= 3.0) return Colors.orange;
-    if (rating >= 2.0) return Colors.deepOrange;
-    return Colors.red;
-  }
-
-  Color _getPerformanceColor(int percentage) {
-    if (percentage >= 80) return Colors.green;
-    if (percentage >= 60) return Colors.orange;
-    return Colors.red;
-  }
-
-  String _getRatingDescription(double rating) {
-    if (rating >= 4.5) return 'Excellent Performance';
-    if (rating >= 4.0) return 'Very Good Performance';
-    if (rating >= 3.0) return 'Good Performance';
-    if (rating >= 2.0) return 'Fair Performance';
-    return 'Needs Improvement';
-  }
-
-  bool _isHiddenField(String key) {
-    // Hide license URLs and quiz data from additional info
-    const hiddenKeys = {
-      'name', 'email', 'userType', 'timestamp', 'city', 'cnic',
-      'currentLocation', 'fatherName', 'gender', 'verificationStatus',
-      'verifiedAt', 'verifiedBy', 'frontLicenseUrl', 'backLicenseUrl',
-      'quizPercentage', 'totalQuestions', 'quizScore', 'quizCompletedAt',
-      'applicationStatus', 'lat', 'lng'
-    };
-    return hiddenKeys.contains(key);
-  }
-
-  void _showImageViewer(BuildContext context, String imageUrl, String title) {
-    showDialog(
-      context: context,
-      builder: (context) => LicenseImageViewer(
-        imageUrl: imageUrl,
-        title: title,
-      ),
-    );
-  }
-
-  Widget _buildDetailSection(String title, List<Widget> items) {
-    if (items.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.primaryBlue,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Divider(),
-          const SizedBox(height: 8),
-          ...items,
-        ],
-      ),
-    );
   }
 
   Widget _buildDetailItem(String label, String value) {
