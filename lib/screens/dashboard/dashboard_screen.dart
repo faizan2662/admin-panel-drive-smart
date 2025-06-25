@@ -122,15 +122,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildStatsGrid(Map<String, dynamic> stats, bool isDesktop, bool isTablet, bool isMobile) {
-    final crossAxisCount = isMobile ? 1 : (isTablet ? 2 : 4);
-    // Increased aspect ratio to prevent overflow
-    final childAspectRatio = isMobile ? 3.0 : (isTablet ? 2.2 : 1.8);
+    final crossAxisCount = isMobile ? 2 : (isTablet ? 2 : 4);
+    final childAspectRatio = isMobile ? 1.4 : (isTablet ? 1.8 : 1.5);
 
     return GridView(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+        crossAxisSpacing: isMobile ? 12 : 16,
+        mainAxisSpacing: isMobile ? 12 : 16,
         childAspectRatio: childAspectRatio,
       ),
       shrinkWrap: true,
@@ -141,8 +140,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           value: stats['totalUsers']?.toString() ?? '0',
           icon: Icons.people,
           color: AppTheme.primaryBlue,
-          activeCount: stats['activeUsers'] ?? 0,
-          inactiveCount: stats['inactiveUsers'] ?? 0,
           isMobile: isMobile,
         ),
         _buildStatCard(
@@ -150,26 +147,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
           value: stats['totalTrainers']?.toString() ?? '0',
           icon: Icons.person_pin,
           color: AppTheme.primaryGreen,
-          activeCount: stats['activeTrainers'] ?? 0,
-          inactiveCount: (stats['totalTrainers'] ?? 0) - (stats['activeTrainers'] ?? 0),
           isMobile: isMobile,
         ),
         _buildStatCard(
           title: 'Trainees',
           value: stats['totalTrainees']?.toString() ?? '0',
           icon: Icons.school,
-          color: AppTheme.primaryBlue,
-          activeCount: stats['activeTrainees'] ?? 0,
-          inactiveCount: (stats['totalTrainees'] ?? 0) - (stats['activeTrainees'] ?? 0),
+          color: Colors.orange[600]!,
           isMobile: isMobile,
         ),
         _buildStatCard(
           title: 'Organizations',
           value: stats['totalOrganizations']?.toString() ?? '0',
           icon: Icons.business,
-          color: AppTheme.primaryGreen,
-          activeCount: stats['activeOrganizations'] ?? 0,
-          inactiveCount: (stats['totalOrganizations'] ?? 0) - (stats['activeOrganizations'] ?? 0),
+          color: Colors.purple[600]!,
           isMobile: isMobile,
         ),
       ],
@@ -181,13 +172,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required String value,
     required IconData icon,
     required Color color,
-    required int activeCount,
-    required int inactiveCount,
     required bool isMobile,
   }) {
-    final totalCount = activeCount + inactiveCount;
-    final activePercentage = totalCount > 0 ? (activeCount / totalCount * 100) : 0.0;
-
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -206,32 +192,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         child: Padding(
-          padding: EdgeInsets.all(isMobile ? 16 : 18),
+          padding: EdgeInsets.all(isMobile ? 16 : 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min, // Prevent overflow
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Header row with icon and title
               Row(
                 children: [
                   Container(
-                    padding: EdgeInsets.all(isMobile ? 8 : 10),
+                    padding: EdgeInsets.all(isMobile ? 8 : 12),
                     decoration: BoxDecoration(
                       color: color,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       icon,
                       color: Colors.white,
-                      size: isMobile ? 18 : 20,
+                      size: isMobile ? 20 : 24,
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       title,
                       style: TextStyle(
-                        fontSize: isMobile ? 13 : 14,
+                        fontSize: isMobile ? 14 : 16,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey[700],
                       ),
@@ -241,47 +227,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ),
-              SizedBox(height: isMobile ? 12 : 16),
+              SizedBox(height: isMobile ? 16 : 20),
 
               // Main value
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: isMobile ? 24 : 28,
+                  fontSize: isMobile ? 28 : 32,
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),
-              ),
-              SizedBox(height: isMobile ? 8 : 12),
-
-              // Active/Inactive breakdown - more compact
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Active: $activeCount',
-                      style: TextStyle(
-                        fontSize: isMobile ? 10 : 11,
-                        color: Colors.green[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Inactive: $inactiveCount',
-                      style: TextStyle(
-                        fontSize: isMobile ? 10 : 11,
-                        color: Colors.orange[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
@@ -519,9 +474,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildPieChart(Map<String, dynamic> stats, bool isMobile) {
-    final activeUsers = stats['activeUsers'] ?? 0;
-    final inactiveUsers = stats['inactiveUsers'] ?? 0;
-    final totalUsers = activeUsers + inactiveUsers;
+    final totalTrainers = stats['totalTrainers'] ?? 0;
+    final totalTrainees = stats['totalTrainees'] ?? 0;
+    final totalOrganizations = stats['totalOrganizations'] ?? 0;
+    final totalUsers = totalTrainers + totalTrainees + totalOrganizations;
 
     return Card(
       elevation: 3,
@@ -562,7 +518,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'User Status Distribution',
+                      'User Distribution',
                       style: TextStyle(
                         fontSize: isMobile ? 16 : 18,
                         fontWeight: FontWeight.bold,
@@ -576,91 +532,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
               SizedBox(
                 height: isMobile ? 220 : 280,
                 child: totalUsers > 0
-                    ? Row(
+                    ? isMobile
+                    ? Column(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: PieChart(
+                        PieChartData(
+                          sectionsSpace: 4,
+                          centerSpaceRadius: 35,
+                          sections: _getPieChartSections(totalTrainers, totalTrainees, totalOrganizations, totalUsers, true),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      flex: 1,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            if (totalTrainers > 0)
+                              _buildLegendItem('Trainers', AppTheme.primaryGreen, totalTrainers, isMobile),
+                            if (totalTrainers > 0 && (totalTrainees > 0 || totalOrganizations > 0))
+                              const SizedBox(height: 8),
+                            if (totalTrainees > 0)
+                              _buildLegendItem('Trainees', Colors.orange[600]!, totalTrainees, isMobile),
+                            if (totalTrainees > 0 && totalOrganizations > 0)
+                              const SizedBox(height: 8),
+                            if (totalOrganizations > 0)
+                              _buildLegendItem('Organizations', Colors.purple[600]!, totalOrganizations, isMobile),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+                    : Row(
                   children: [
                     Expanded(
                       flex: 3,
                       child: PieChart(
                         PieChartData(
                           sectionsSpace: 4,
-                          centerSpaceRadius: isMobile ? 45 : 55,
-                          sections: [
-                            PieChartSectionData(
-                              value: activeUsers.toDouble(),
-                              title: '${(activeUsers / totalUsers * 100).toStringAsFixed(0)}%',
-                              color: AppTheme.primaryBlue,
-                              radius: isMobile ? 65 : 75,
-                              titleStyle: TextStyle(
-                                fontSize: isMobile ? 14 : 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                              badgeWidget: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  Icons.check_circle,
-                                  color: AppTheme.primaryBlue,
-                                  size: 16,
-                                ),
-                              ),
-                              badgePositionPercentageOffset: 1.2,
-                            ),
-                            PieChartSectionData(
-                              value: inactiveUsers.toDouble(),
-                              title: '${(inactiveUsers / totalUsers * 100).toStringAsFixed(0)}%',
-                              color: Colors.orange[400],
-                              radius: isMobile ? 65 : 75,
-                              titleStyle: TextStyle(
-                                fontSize: isMobile ? 14 : 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                              badgeWidget: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  Icons.pause_circle,
-                                  color: Colors.orange[400],
-                                  size: 16,
-                                ),
-                              ),
-                              badgePositionPercentageOffset: 1.2,
-                            ),
-                          ],
+                          centerSpaceRadius: 55,
+                          sections: _getPieChartSections(totalTrainers, totalTrainees, totalOrganizations, totalUsers, false),
                         ),
                       ),
                     ),
+                    const SizedBox(width: 16),
                     Expanded(
                       flex: 2,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildLegendItem('Active Users', AppTheme.primaryBlue, activeUsers, isMobile),
-                          SizedBox(height: isMobile ? 20 : 24),
-                          _buildLegendItem('Inactive Users', Colors.orange[400]!, inactiveUsers, isMobile),
-                        ],
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (totalTrainers > 0) ...[
+                              _buildLegendItem('Trainers', AppTheme.primaryGreen, totalTrainers, isMobile),
+                              const SizedBox(height: 16),
+                            ],
+                            if (totalTrainees > 0) ...[
+                              _buildLegendItem('Trainees', Colors.orange[600]!, totalTrainees, isMobile),
+                              const SizedBox(height: 16),
+                            ],
+                            if (totalOrganizations > 0)
+                              _buildLegendItem('Organizations', Colors.purple[600]!, totalOrganizations, isMobile),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -691,6 +629,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
     );
+  }
+
+  List<PieChartSectionData> _getPieChartSections(int totalTrainers, int totalTrainees, int totalOrganizations, int totalUsers, bool isMobile) {
+    List<PieChartSectionData> sections = [];
+
+    if (totalTrainers > 0) {
+      sections.add(
+        PieChartSectionData(
+          value: totalTrainers.toDouble(),
+          title: '${(totalTrainers / totalUsers * 100).toStringAsFixed(0)}%',
+          color: AppTheme.primaryGreen,
+          radius: isMobile ? 55 : 75,
+          titleStyle: TextStyle(
+            fontSize: isMobile ? 12 : 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
+
+    if (totalTrainees > 0) {
+      sections.add(
+        PieChartSectionData(
+          value: totalTrainees.toDouble(),
+          title: '${(totalTrainees / totalUsers * 100).toStringAsFixed(0)}%',
+          color: Colors.orange[600],
+          radius: isMobile ? 55 : 75,
+          titleStyle: TextStyle(
+            fontSize: isMobile ? 12 : 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
+
+    if (totalOrganizations > 0) {
+      sections.add(
+        PieChartSectionData(
+          value: totalOrganizations.toDouble(),
+          title: '${(totalOrganizations / totalUsers * 100).toStringAsFixed(0)}%',
+          color: Colors.purple[600],
+          radius: isMobile ? 55 : 75,
+          titleStyle: TextStyle(
+            fontSize: isMobile ? 12 : 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
+
+    return sections;
   }
 
   Widget _buildLegendItem(String label, Color color, int count, bool isMobile) {

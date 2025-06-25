@@ -8,6 +8,8 @@ import 'providers/users_provider.dart';
 import 'providers/community_provider.dart';
 import 'providers/quiz_provider.dart';
 import 'providers/admin_provider.dart';
+import 'providers/booking_provider.dart';
+// import 'providers/session_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'utils/theme.dart';
@@ -33,11 +35,16 @@ class DriveSmartAdminApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CommunityProvider()),
         ChangeNotifierProvider(create: (_) => QuizProvider()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) => BookingProvider()),
+        // ChangeNotifierProvider(create: (_) => SessionProvider()),
       ],
       child: MaterialApp(
         title: 'Drive Smart Admin',
-        theme: AppTheme.lightTheme,
-        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+          fontFamily: 'Inter',
+        ),
         home: Consumer<AuthProvider>(
           builder: (context, authProvider, _) {
             if (authProvider.isLoading) {
@@ -48,11 +55,12 @@ class DriveSmartAdminApp extends StatelessWidget {
               );
             }
 
-            return authProvider.isAuthenticated
+            return authProvider.user != null
                 ? const MainScreen()
                 : const LoginScreen();
           },
         ),
+        debugShowCheckedModeBanner: false,
       ),
     );
   }

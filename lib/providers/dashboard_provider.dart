@@ -11,6 +11,9 @@ class DashboardProvider extends ChangeNotifier {
   Map<String, dynamic> _stats = {};
   List<UserModel> _recentUsers = [];
   List<FlSpot> _userGrowthData = [];
+  List<double> _trainerGrowthData = [];
+  List<double> _traineeGrowthData = [];
+  List<double> _organizationGrowthData = [];
   bool _isLoading = false;
   String? _errorMessage;
   Timer? _refreshTimer;
@@ -20,6 +23,9 @@ class DashboardProvider extends ChangeNotifier {
   Map<String, dynamic> get stats => _stats;
   List<UserModel> get recentUsers => _recentUsers;
   List<FlSpot> get userGrowthData => _userGrowthData;
+  List<double> getTrainerGrowthData() => _trainerGrowthData;
+  List<double> getTraineeGrowthData() => _traineeGrowthData;
+  List<double> getOrganizationGrowthData() => _organizationGrowthData;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -47,6 +53,7 @@ class DashboardProvider extends ChangeNotifier {
         _loadOverallStats(),
         _loadRecentUsers(),
         _loadUserGrowthData(),
+        _loadRoleSpecificGrowthData(),
       ]);
 
       _hasLoadedOnce = true;
@@ -75,6 +82,7 @@ class DashboardProvider extends ChangeNotifier {
         _loadOverallStats(),
         _loadRecentUsers(),
         _loadUserGrowthData(),
+        _loadRoleSpecificGrowthData(),
       ]);
       notifyListeners();
     } catch (e) {
@@ -87,14 +95,9 @@ class DashboardProvider extends ChangeNotifier {
       // Initialize stats with zeros
       _stats = {
         'totalUsers': 0,
-        'activeUsers': 0,
-        'inactiveUsers': 0,
         'totalTrainers': 0,
-        'activeTrainers': 0,
         'totalTrainees': 0,
-        'activeTrainees': 0,
         'totalOrganizations': 0,
-        'activeOrganizations': 0,
         'totalQuizzes': 0,
         'activeQuizzes': 0,
       };
@@ -105,36 +108,16 @@ class DashboardProvider extends ChangeNotifier {
 
       _stats['totalUsers'] = users.length;
 
-      // Count active/inactive users and roles
-      int activeUsers = 0;
+      // Count roles
       int totalTrainers = 0;
-      int activeTrainers = 0;
       int totalTrainees = 0;
-      int activeTrainees = 0;
       int totalOrganizations = 0;
-      int activeOrganizations = 0;
-
-      // Debug: Print first few users to understand data structure
-      print('=== DEBUG: User data structure ===');
-      for (int i = 0; i < users.length && i < 3; i++) {
-        final data = users[i].data();
-        print('User $i: ${data.toString()}');
-      }
-      print('=== END DEBUG ===');
 
       for (var doc in users) {
         final data = doc.data();
 
-        // Check different possible status field names and values
-        final status = data['status'] ?? data['isActive'] ?? data['active'] ?? 'inactive';
-        final isActive = _isUserActive(status);
-
         // Check different possible role field names and normalize role values
         final role = _normalizeRole(data['role'] ?? data['userType'] ?? data['type'] ?? '');
-
-        print('User: ${data['name'] ?? 'Unknown'}, Role: $role, Status: $status, IsActive: $isActive');
-
-        if (isActive) activeUsers++;
 
         // Count by role
         switch (role.toLowerCase()) {
@@ -142,20 +125,17 @@ class DashboardProvider extends ChangeNotifier {
           case 'instructor':
           case 'teacher':
             totalTrainers++;
-            if (isActive) activeTrainers++;
             break;
           case 'trainee':
           case 'student':
           case 'learner':
             totalTrainees++;
-            if (isActive) activeTrainees++;
             break;
           case 'organization':
           case 'org':
           case 'company':
           case 'institution':
             totalOrganizations++;
-            if (isActive) activeOrganizations++;
             break;
           case 'admin':
           case 'administrator':
@@ -164,20 +144,13 @@ class DashboardProvider extends ChangeNotifier {
           default:
           // If no specific role, count as trainee by default
             totalTrainees++;
-            if (isActive) activeTrainees++;
-            print('Unknown role "$role" for user ${data['name'] ?? 'Unknown'}, counting as trainee');
             break;
         }
       }
 
-      _stats['activeUsers'] = activeUsers;
-      _stats['inactiveUsers'] = _stats['totalUsers'] - activeUsers;
       _stats['totalTrainers'] = totalTrainers;
-      _stats['activeTrainers'] = activeTrainers;
       _stats['totalTrainees'] = totalTrainees;
-      _stats['activeTrainees'] = activeTrainees;
       _stats['totalOrganizations'] = totalOrganizations;
-      _stats['activeOrganizations'] = activeOrganizations;
 
       print('=== FINAL STATS ===');
       print('Total Users: ${_stats['totalUsers']}');
@@ -208,17 +181,6 @@ class DashboardProvider extends ChangeNotifier {
       print('Error loading stats: $e');
       throw Exception('Failed to load statistics: $e');
     }
-  }
-
-  // Helper method to determine if user is active
-  bool _isUserActive(dynamic status) {
-    if (status == null) return false;
-
-    final statusStr = status.toString().toLowerCase();
-    return statusStr == 'active' ||
-        statusStr == 'true' ||
-        statusStr == '1' ||
-        status == true;
   }
 
   // Helper method to normalize role values
@@ -267,13 +229,15 @@ class DashboardProvider extends ChangeNotifier {
       for (var doc in snapshot.docs) {
         try {
           final data = doc.data();
+          final role = _normalizeRole(data['role'] ?? data['userType'] ?? data['type'] ?? '');
+
           _recentUsers.add(
             UserModel(
               id: doc.id,
               name: data['name'] ?? 'Unknown',
               email: data['email'] ?? 'No email',
-              role: _parseUserRole(data['role']),
-              status: _parseUserStatus(data['status']),
+              role: _parseUserRole(role),
+              status: UserStatus.active, // Default status
               joinDate: data['timestamp'] != null
                   ? (data['timestamp'] as Timestamp).toDate()
                   : DateTime.now(),
@@ -326,6 +290,90 @@ class DashboardProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _loadRoleSpecificGrowthData() async {
+    try {
+      _trainerGrowthData = [];
+      _traineeGrowthData = [];
+      _organizationGrowthData = [];
+
+      // Get data for the last 12 months
+      final now = DateTime.now();
+      final List<DateTime> monthStarts = [];
+
+      for (int i = 11; i >= 0; i--) {
+        final monthStart = DateTime(now.year, now.month - i, 1);
+        monthStarts.add(monthStart);
+      }
+
+      for (int i = 0; i < monthStarts.length; i++) {
+        final monthStart = monthStarts[i];
+        final monthEnd = i < monthStarts.length - 1
+            ? monthStarts[i + 1]
+            : DateTime(now.year, now.month + 1, 1);
+
+        try {
+          final snapshot = await _firestore
+              .collection('users')
+              .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(monthStart))
+              .where('timestamp', isLessThan: Timestamp.fromDate(monthEnd))
+              .get();
+
+          int trainers = 0;
+          int trainees = 0;
+          int organizations = 0;
+
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            final role = _normalizeRole(data['role'] ?? data['userType'] ?? data['type'] ?? '');
+
+            switch (role.toLowerCase()) {
+              case 'trainer':
+              case 'instructor':
+              case 'teacher':
+                trainers++;
+                break;
+              case 'trainee':
+              case 'student':
+              case 'learner':
+                trainees++;
+                break;
+              case 'organization':
+              case 'org':
+              case 'company':
+              case 'institution':
+                organizations++;
+                break;
+              default:
+                trainees++; // Default to trainee
+                break;
+            }
+          }
+
+          _trainerGrowthData.add(trainers.toDouble());
+          _traineeGrowthData.add(trainees.toDouble());
+          _organizationGrowthData.add(organizations.toDouble());
+
+        } catch (e) {
+          _trainerGrowthData.add(0);
+          _traineeGrowthData.add(0);
+          _organizationGrowthData.add(0);
+        }
+      }
+
+      print('=== GROWTH DATA ===');
+      print('Trainer Growth: $_trainerGrowthData');
+      print('Trainee Growth: $_traineeGrowthData');
+      print('Organization Growth: $_organizationGrowthData');
+      print('=== END GROWTH DATA ===');
+
+    } catch (e) {
+      print('Error loading role-specific growth data: $e');
+      _trainerGrowthData = List.filled(12, 0);
+      _traineeGrowthData = List.filled(12, 0);
+      _organizationGrowthData = List.filled(12, 0);
+    }
+  }
+
   UserRole _parseUserRole(String? role) {
     final normalizedRole = _normalizeRole(role);
     switch (normalizedRole) {
@@ -335,9 +383,5 @@ class DashboardProvider extends ChangeNotifier {
       case 'organization': return UserRole.organization;
       default: return UserRole.trainee;
     }
-  }
-
-  UserStatus _parseUserStatus(String? status) {
-    return _isUserActive(status) ? UserStatus.active : UserStatus.inactive;
   }
 }

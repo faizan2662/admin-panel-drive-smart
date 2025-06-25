@@ -6,9 +6,7 @@ import '../utils/theme.dart';
 import '../widgets/logo_widget.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'users/users_screen.dart';
-import 'organizations/organizations_screen.dart';
-import 'training/training_screen.dart';
-import 'sessions/sessions_screen.dart';
+import 'training/bookings_screen.dart';
 import 'community/community_screen.dart';
 import 'quizzes/quizzes_screen.dart';
 import 'analytics/analytics_screen.dart';
@@ -27,9 +25,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const DashboardScreen(),
     const UsersScreen(),
-    const OrganizationsScreen(),
-    const TrainingScreen(),
-    const SessionsScreen(),
+    const BookingsScreen(),
     const CommunityScreen(),
     const QuizzesScreen(),
     const AnalyticsScreen(),
@@ -39,9 +35,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<NavigationItem> _navigationItems = [
     NavigationItem(icon: Icons.dashboard, label: 'Dashboard'),
     NavigationItem(icon: Icons.people, label: 'Users'),
-    NavigationItem(icon: Icons.business, label: 'Organizations'),
-    NavigationItem(icon: Icons.school, label: 'Training'),
-    NavigationItem(icon: Icons.calendar_today, label: 'Sessions'),
+    NavigationItem(icon: Icons.book_online, label: 'Bookings'),
     NavigationItem(icon: Icons.forum, label: 'Community'),
     NavigationItem(icon: Icons.quiz, label: 'Quizzes'),
     NavigationItem(icon: Icons.analytics, label: 'Analytics'),
@@ -66,7 +60,7 @@ class _MainScreenState extends State<MainScreen> {
           Container(
             width: 255,
             decoration: const BoxDecoration(
-              color: Colors.white,
+              color: Color(0xFF20B2AA), // Teal color from the image
               border: Border(right: BorderSide(color: Color(0xFFE5E7EB))),
             ),
             child: Column(
@@ -91,19 +85,19 @@ class _MainScreenState extends State<MainScreen> {
                         child: ListTile(
                           leading: Icon(
                             item.icon,
-                            color: isSelected ? AppTheme.primaryBlue : Colors.grey[600],
+                            color: isSelected ? Colors.white : Colors.white70,
                             size: 20,
                           ),
                           title: Text(
                             item.label,
                             style: TextStyle(
-                              color: isSelected ? AppTheme.primaryBlue : Colors.grey[700],
+                              color: isSelected ? Colors.white : Colors.white70,
                               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                               fontSize: 14,
                             ),
                           ),
                           selected: isSelected,
-                          selectedTileColor: AppTheme.lightBlue,
+                          selectedTileColor: Colors.white.withOpacity(0.2),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -130,20 +124,20 @@ class _MainScreenState extends State<MainScreen> {
                     builder: (context, authProvider, _) {
                       return ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: AppTheme.primaryBlue,
+                          backgroundColor: Colors.white,
                           child: Text(
                             authProvider.user?.email?.substring(0, 1).toUpperCase() ?? 'A',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: const TextStyle(color: Color(0xFF20B2AA), fontWeight: FontWeight.bold),
                           ),
                         ),
                         title: Text(
                           authProvider.user?.email ?? 'Admin',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        subtitle: const Text('Administrator', style: TextStyle(fontSize: 12)),
+                        subtitle: const Text('Administrator', style: TextStyle(fontSize: 12, color: Colors.white70)),
                         trailing: PopupMenuButton(
-                          icon: const Icon(Icons.more_vert, size: 20),
+                          icon: const Icon(Icons.more_vert, size: 20, color: Colors.white),
                           itemBuilder: (context) => [
                             PopupMenuItem(
                               child: const Row(
