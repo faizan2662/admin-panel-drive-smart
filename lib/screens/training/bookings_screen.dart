@@ -86,7 +86,6 @@ class _BookingsScreenState extends State<BookingsScreen> {
                       children: [
                         // Search
                         Expanded(
-                          flex: 2,
                           child: TextField(
                             controller: _searchController,
                             decoration: InputDecoration(
@@ -109,33 +108,6 @@ class _BookingsScreenState extends State<BookingsScreen> {
                             ),
                             onChanged: (value) {
                               bookingProvider.setSearchQuery(value);
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-
-                        // Status Filter
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: bookingProvider.statusFilter,
-                            decoration: InputDecoration(
-                              labelText: 'Status Filter',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                            items: ['All Status', 'accepted', 'rejected', 'booking']
-                                .map((status) => DropdownMenuItem(
-                              value: status,
-                              child: Text(status == 'All Status' ? status : status.toUpperCase()),
-                            ))
-                                .toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                bookingProvider.setStatusFilter(value);
-                              }
                             },
                           ),
                         ),
@@ -297,7 +269,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Total Amount: ₹${booking.totalAmount}',
+                                      'Total Amount: Rs.${booking.totalAmount}',
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: Colors.green[700],
@@ -594,16 +566,21 @@ class _BookingsScreenState extends State<BookingsScreen> {
 
   Widget _buildStatusChip(String status) {
     Color color;
+    String displayStatus = status;
+
     switch (status.toLowerCase()) {
       case 'accepted':
         color = Colors.green;
+        displayStatus = 'ACCEPTED';
         break;
       case 'rejected':
         color = Colors.red;
+        displayStatus = 'REJECTED';
         break;
       case 'booking':
       default:
         color = Colors.orange;
+        displayStatus = 'BOOKING';
         break;
     }
 
@@ -615,7 +592,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Text(
-        status.toUpperCase(),
+        displayStatus,
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.bold,
@@ -780,8 +757,8 @@ class _BookingDetailDialog extends StatelessWidget {
                         _buildInfoRow('Request Type', booking.requestType.replaceAll('_', ' ').toUpperCase()),
                         _buildInfoRow('Status', booking.status.toUpperCase()),
                         _buildInfoRow('Booked By', booking.bookedBy),
-                        _buildInfoRow('Total Amount', '₹${booking.totalAmount}'),
-                        _buildInfoRow('Payment Status', booking.paymentStatus?.toUpperCase() ?? 'PENDING'),
+                        _buildInfoRow('Total Amount', 'Rs.${booking.totalAmount}'),
+                        _buildInfoRow('Payment Status', _getSimplifiedPaymentStatus(booking.paymentStatus)),
                       ],
                     ),
 
@@ -1018,5 +995,19 @@ class _BookingDetailDialog extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _getSimplifiedPaymentStatus(String? paymentStatus) {
+    if (paymentStatus == null) return 'Pending';
+
+    switch (paymentStatus.toLowerCase()) {
+      case 'paid':
+      case 'completed':
+      case 'success':
+      case 'successful':
+        return 'Paid';
+      default:
+        return 'Pending';
+    }
   }
 }

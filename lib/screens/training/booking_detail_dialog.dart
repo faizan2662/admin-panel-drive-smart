@@ -107,8 +107,8 @@ class BookingDetailDialog extends StatelessWidget {
                     _buildSection(
                       'Payment Details',
                       [
-                        _buildInfoRow('Total Amount', 'PKR ${booking.totalAmount}'),
-                        _buildInfoRow('Payment Status', booking.paymentStatus ?? 'N/A'),
+                        _buildInfoRow('Total Amount', 'Rs.${booking.totalAmount}'),
+                        _buildInfoRow('Payment Status', _getSimplifiedPaymentStatus(booking.paymentStatus)),
                         if (booking.paymentDate != null)
                           _buildInfoRow('Payment Date', _formatDateTime(booking.paymentDate!)),
                       ],
@@ -323,5 +323,19 @@ class BookingDetailDialog extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _getSimplifiedPaymentStatus(String? paymentStatus) {
+    if (paymentStatus == null) return 'Pending';
+
+    switch (paymentStatus.toLowerCase()) {
+      case 'paid':
+      case 'completed':
+      case 'success':
+      case 'successful':
+        return 'Paid';
+      default:
+        return 'Pending';
+    }
   }
 }

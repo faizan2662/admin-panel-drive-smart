@@ -87,16 +87,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 gradient: AppTheme.primaryGradient,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.download, size: 18),
-                label: const Text('Export'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  foregroundColor: Colors.white,
-                ),
-              ),
+              // child: ElevatedButton.icon(
+              //   onPressed: () {},
+              //   icon: const Icon(Icons.download, size: 18),
+              //   label: const Text('Export'),
+              //   style: ElevatedButton.styleFrom(
+              //     backgroundColor: Colors.transparent,
+              //     shadowColor: Colors.transparent,
+              //     foregroundColor: Colors.white,
+              //   ),
+              // ),
             ),
           ],
         ),

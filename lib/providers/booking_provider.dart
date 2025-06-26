@@ -18,24 +18,18 @@ class BookingProvider extends ChangeNotifier {
   List<BookingModel> get filteredBookings {
     List<BookingModel> filtered = _bookings;
 
-    // Apply search filter
+    // Apply search filter only
     if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((booking) =>
       booking.traineeName?.toLowerCase().contains(_searchQuery.toLowerCase()) == true ||
           booking.trainerName?.toLowerCase().contains(_searchQuery.toLowerCase()) == true ||
           booking.requestType.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          booking.selectedPlans.any((plan) => plan.toLowerCase().contains(_searchQuery.toLowerCase()))
+          booking.selectedPlans.any((plan) => plan.toLowerCase().contains(_searchQuery.toLowerCase())) ||
+          booking.bookedBy.toLowerCase().contains(_searchQuery.toLowerCase())
       ).toList();
     }
 
-    // Apply status filter
-    if (_statusFilter != 'All Status') {
-      filtered = filtered.where((booking) =>
-      booking.status.toLowerCase() == _statusFilter.toLowerCase()
-      ).toList();
-    }
-
-    // Ensure filtered results are also sorted by newest first
+    // Sort by newest first
     filtered.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
     return filtered;
@@ -58,16 +52,18 @@ class BookingProvider extends ChangeNotifier {
         try {
           final data = doc.data() as Map<String, dynamic>;
           print('Processing booking: ${doc.id}');
+          print('Booking data: $data'); // Debug log
 
           final booking = BookingModel.fromMap(data, doc.id);
           _bookings.add(booking);
-          print('Successfully added booking with status: ${booking.status}');
+          print('Successfully added booking with status: ${booking.status}, amount: ${booking.totalAmount}');
         } catch (e) {
           print('Error processing booking ${doc.id}: $e');
+          print('Booking data: ${doc.data()}'); // Debug problematic data
         }
       }
 
-      // Sort by timestamp (newest first - most recently added)
+      // Sort by timestamp (newest first)
       _bookings.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
       print('Successfully loaded ${_bookings.length} bookings');

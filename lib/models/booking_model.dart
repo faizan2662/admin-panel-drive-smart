@@ -58,7 +58,7 @@ class BookingModel {
       id: id,
       acceptedAt: _parseTimestamp(map['acceptedAt']),
       bookedBy: map['bookedBy'] ?? '',
-      completedLessons: map['completedLessons'] ?? 0,
+      completedLessons: _parseIntValue(map['completedLessons']),
       createdAt: _parseTimestamp(map['createdAt']) ?? DateTime.now(),
       location: map['location'] ?? '',
       offeredSessions: (map['offeredSessions'] as List<dynamic>?)
@@ -67,14 +67,14 @@ class BookingModel {
           [],
       paymentDate: _parseTimestamp(map['paymentDate']),
       paymentStatus: map['paymentStatus'],
-      progressPercent: map['progressPercent'] ?? 0,
+      progressPercent: _parseIntValue(map['progressPercent']),
       requestType: map['requestType'] ?? '',
-      selectedPlans: List<String>.from(map['selectedPlans'] ?? []),
-      sessionCount: map['sessionCount'] ?? 0,
+      selectedPlans: _parseStringList(map['selectedPlans']),
+      sessionCount: _parseIntValue(map['sessionCount']),
       status: map['status'] ?? 'booking',
       timestamp: _parseTimestamp(map['timestamp']) ?? DateTime.now(),
-      totalAmount: map['totalAmount'] ?? 0,
-      totalLessons: map['totalLessons'] ?? 0,
+      totalAmount: _parseIntValue(map['totalAmount']),
+      totalLessons: _parseIntValue(map['totalLessons']),
       traineeId: map['traineeId'],
       traineeName: map['traineeName'],
       traineeProfilePic: map['traineeProfilePic'],
@@ -83,6 +83,22 @@ class BookingModel {
       trainerName: map['trainerName'],
       trainerProfilePic: map['trainerProfilePic'],
     );
+  }
+
+  static int _parseIntValue(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  static List<String> _parseStringList(dynamic value) {
+    if (value == null) return [];
+    if (value is List) {
+      return value.map((item) => item.toString()).toList();
+    }
+    return [];
   }
 
   static DateTime? _parseTimestamp(dynamic timestamp) {
